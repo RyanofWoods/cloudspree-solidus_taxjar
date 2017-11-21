@@ -1,7 +1,7 @@
-SpreeTaxjar
+SolidusTaxjar
 ===========
 
-Spree::Taxjar is a sales tax extension for Spree using [SmartCalcs by TaxJar](https://developers.taxjar.com/api/reference/).
+A sales tax extension for Solidus using [SmartCalcs by TaxJar](https://developers.taxjar.com/api/reference/).
 
 ## Prerequisites
 
@@ -17,7 +17,7 @@ Spree::Taxjar is a sales tax extension for Spree using [SmartCalcs by TaxJar](ht
 1. Add this extension to your Gemfile with this line:
 
   ```ruby
-  gem 'spree_taxjar', github: 'vinsol/spree-taxjar', branch: '2-4-stable'
+  gem 'solidus_taxjar', github: 'fcpeuro/solidus_taxjar', branch: '1-4-stable'
   ```
 
 2. Install the gem using Bundler:
@@ -29,7 +29,7 @@ Spree::Taxjar is a sales tax extension for Spree using [SmartCalcs by TaxJar](ht
 3. Copy & run migrations
 
   ```ruby
-  bundle exec rails g spree_taxjar:install
+  bundle exec rails g solidus_taxjar:install
   ```
 
 4. Restart your server
@@ -44,12 +44,9 @@ Spree::Taxjar is a sales tax extension for Spree using [SmartCalcs by TaxJar](ht
   - Update tax rates to Spree/Taxjar calculator.
 
 ## Developing / Debugging Extension
-
-- Ensure `Spree::Config[:taxjar_enabled]` is set as expected (true/false)
-- Set `Spree::Config[:taxjar_debug_enabled]` as true
-    - It starts logging the interactions in `spec/dummy/log/spree_taxjar.log` if using tests
-    - Check the logs in your Rails application AT `log/spree_taxjar.log` where you have installed the spree_taxjar extension
-    - The same logs are also added to Rails log file like `log/development.log` (works for all environments)
+  - Interactions are logged in `spec/dummy/log/spree_taxjar.log`
+  - Check the logs in your Rails application AT `log/spree_taxjar.log` where you have installed the spree_taxjar extension
+  - The same logs are also added to Rails log file like `log/development.log` (works for all environments)
 - As most of the API interactions are recorded and stored in VCR cassettes AT `spec/fixtures/vcr_cassettes`
     - Start with getting familiar with request and response expected
     - Feel free to delete the cassettes to debug your live use-case by setting `Spree::Config[:taxjar_api_key]` as your api_key and inspect results
@@ -92,4 +89,3 @@ For better handling of exceptions raised by TaxJar due to various validations ad
         flash[:error] = 'TaxJar::' + e.message
         redirect_to cart_path
       end
-

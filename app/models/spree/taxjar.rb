@@ -148,7 +148,7 @@ module Spree
             quantity: return_items.length,
             product_identifier: item.variant.sku,
             description: ActionView::Base.full_sanitizer.sanitize(item.variant.description).truncate(150),
-            unit_price: item.pre_tax_amount,
+            unit_price: item.total_excluding_vat,
             product_tax_code: item.variant.tax_category.try(:tax_code)
           }
         end
@@ -159,7 +159,7 @@ module Spree
           transaction_id: @reimbursement.number,
           transaction_reference_id: @order.number,
           transaction_date: @order.completed_at.as_json,
-          amount: @reimbursement.return_items.sum(:pre_tax_amount),
+          amount: @reimbursement.return_items.sum('amount - included_tax_total'),
           shipping: 0,
           sales_tax: @reimbursement.return_items.sum(:additional_tax_total),
           line_items: return_items_params

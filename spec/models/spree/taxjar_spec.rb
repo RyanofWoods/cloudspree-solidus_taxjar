@@ -5,7 +5,7 @@ describe Spree::Taxjar do
   let(:reimbursement) { create(:reimbursement) }
   let!(:country) { create(:country) }
   let!(:state) { create(:state, country: country, abbr: "TX") }
-  let!(:zone) { create(:zone, name: "Country Zone", default_tax: true, zone_members: []) }
+  let!(:zone) { create(:zone, name: "Country Zone", zone_members: []) }
   let!(:ship_address) { create(:ship_address, city: "Adrian", zipcode: "79001", state: state) }
   let!(:tax_category) { create(:tax_category, tax_rates: []) }
   let!(:order) { create(:order,ship_address_id: ship_address.id) }

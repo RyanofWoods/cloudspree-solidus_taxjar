@@ -1,4 +1,4 @@
-<%= render 'spree/admin/shared/configuration_menu' %>
+<%= render 'spree/admin/shared/taxes_tabs' %>
 
 <% content_for :page_title do %>
   <%= Spree.t(:taxjar_settings) %>
@@ -12,7 +12,7 @@
           <% @preferences_api.each do |key| %>
               <div class="form-group">
                 <%= label_tag key %>
-                <%= preference_field_tag(key, Spree::Config[key], type: Spree::Config.preference_type(key)) %>
+                <%= render "spree/admin/shared/preference_fields/#{Spree::Config.preference_type(key)}", name: key, value: Spree::Config[key] %>
               </div>
           <% end %>
         </fieldset>
@@ -20,9 +20,9 @@
     </div>
 
     <div class="form-buttons" data-hook="buttons">
-      <%= button Spree.t('actions.update'), 'refresh' %>
+      <%= button Spree.t('actions.update') %>
       <span class="or"><%= Spree.t(:or) %></span>
-      <%= button_link_to Spree.t('actions.cancel'), admin_orders_url, icon: 'delete' %>
+      <%= button_link_to Spree.t('actions.cancel'), admin_orders_url %>
     </div>
   </div>
 <% end %>

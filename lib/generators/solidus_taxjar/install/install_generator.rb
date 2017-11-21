@@ -1,4 +1,4 @@
-module SpreeTaxjar
+module SolidusTaxjar
   module Generators
     class InstallGenerator < Rails::Generators::Base
 
@@ -15,7 +15,7 @@ module SpreeTaxjar
       end
 
       def add_migrations
-        run 'bundle exec rake railties:install:migrations FROM=spree_taxjar'
+        run 'bundle exec rake railties:install:migrations FROM=solidus_taxjar'
       end
 
       def run_migrations

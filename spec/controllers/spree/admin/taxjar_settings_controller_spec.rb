@@ -1,6 +1,7 @@
 require 'spec_helper'
 
 describe Spree::Admin::TaxjarSettingsController, type: :controller do
+  render_views
 
   let(:user) { mock_model(Spree.user_class).as_null_object }
 
@@ -8,6 +9,7 @@ describe Spree::Admin::TaxjarSettingsController, type: :controller do
     allow(controller).to receive(:spree_current_user).and_return(user)
     allow(controller).to receive(:authorize!).and_return(true)
     allow(controller).to receive(:authorize_admin).and_return(true)
+    allow(user).to receive(:spree_roles).and_return []
   end
 
   describe "GET 'edit'" do
@@ -21,11 +23,13 @@ describe Spree::Admin::TaxjarSettingsController, type: :controller do
     end
 
     it "assigns @preferences_api" do
-      expect(assigns[:preferences_api]).to eq([:taxjar_api_key, :taxjar_enabled, :taxjar_debug_enabled])
+      expect( response.body ).to match 'Taxjar api key'
+      expect( response.body ).to match 'Taxjar enabled'
+      expect( response.body ).to match 'Taxjar debug enabled'
     end
 
     it "renders edit template" do
-      expect(response).to render_template(:edit)
+      expect( response.body ).to match Spree.t(:taxjar_settings)
     end
 
   end

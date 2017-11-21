@@ -6,12 +6,12 @@ describe Spree::Calculator::TaxjarCalculator do
   let!(:country) { create(:country) }
   let!(:state) { create(:state, country: country, abbr: "TX") }
   let!(:state_ca) { create(:state, country: country, abbr: "CA") }
-  let!(:zone) { create(:zone, name: "Country Zone", default_tax: true, zone_members: []) }
+  let!(:zone) { create(:zone, name: "Country Zone", zone_members: []) }
   let!(:ship_address) { create(:ship_address, city: "Adrian", zipcode: "79001", state: state) }
   let!(:ship_address_ca) { create(:ship_address, city: "Los Angeles", zipcode: "90002", state: state_ca) }
   let!(:tax_category) { create(:tax_category, tax_rates: []) }
   let!(:tax_category_exempt) { create(:tax_category, tax_rates: []) }
-  let!(:rate) { create(:tax_rate, tax_category: tax_category, amount: 0.05, included_in_price: included_in_price) }
+  let!(:rate) { create(:tax_rate, tax_categories: [tax_category], amount: 0.05, included_in_price: included_in_price) }
   let(:included_in_price) { false }
   let!(:calculator) { Spree::Calculator::TaxjarCalculator.new(calculable: rate) }
   let!(:order) { create(:order,ship_address_id: ship_address.id) }
@@ -28,10 +28,6 @@ describe Spree::Calculator::TaxjarCalculator do
     Spree::Config[:taxjar_api_key] = '04d828b7374896d7867b03289ea20957'
     ## Forcing tests with shipping_address as tax_address
     Spree::Config[:tax_using_ship_address] = true
-  end
-
-  describe 'Constants' do
-    it { expect(Spree::Calculator::TaxjarCalculator.include?(Spree::VatPriceCalculation)).to be true }
   end
 
   describe ".description" do
