@@ -2,6 +2,7 @@ require_dependency 'spree/calculator'
 
 module Spree
   class Calculator::TaxjarCalculator < Calculator
+    preference :api_key, :string
 
     CACHE_EXPIRATION_DURATION = 10.minutes
 
@@ -14,8 +15,7 @@ module Spree
     end
 
     def compute_line_item(item)
-      SpreeTaxjar::Logger.log(__method__, {line_item: {order: {id: item.order.id, number: item.order.number}}}) if SpreeTaxjar::Logger.logger_enabled?
-      return 0 unless Spree::Config[:taxjar_enabled]
+      logger.debug line_item: {order: {id: item.order.id, number: item.order.number}}
       if rate.included_in_price
         0
       else
@@ -24,13 +24,11 @@ module Spree
     end
 
     def compute_shipment(shipment)
-      SpreeTaxjar::Logger.log(__method__, {shipment: {order: {id: shipment.order.id, number: shipment.order.number}}}) if SpreeTaxjar::Logger.logger_enabled?
-      return 0 unless Spree::Config[:taxjar_enabled]
+      logger.debug shipment: {order: {id: shipment.order.id, number: shipment.order.number}}
       tax_for_shipment(shipment)
     end
 
     def compute_shipping_rate(shipping_rate)
-      return 0 unless Spree::Config[:taxjar_enabled]
       if rate.included_in_price
         raise Spree.t(:shipping_rate_exception_message)
       else
@@ -49,10 +47,10 @@ module Spree
 
         rails_cache_key = cache_key(order, shipment, tax_address)
 
-        SpreeTaxjar::Logger.log(__method__, {shipment: {order: {id: shipment.order.id, number: shipment.order.number}}, cache_key: rails_cache_key}) if SpreeTaxjar::Logger.logger_enabled?
+        logger.debug shipment: {order: {id: shipment.order.id, number: shipment.order.number}}, cache_key: rails_cache_key
 
         Rails.cache.fetch(rails_cache_key, expires_in: CACHE_EXPIRATION_DURATION) do
-          Spree::Taxjar.new(order, nil, shipment).calculate_tax_for_shipment
+          Spree::Taxjar.new(preferred_api_key, order, nil, shipment).calculate_tax_for_shipment
         end
       end
 
@@ -62,12 +60,12 @@ module Spree
 
         rails_cache_key = cache_key(order, item, tax_address)
 
-        SpreeTaxjar::Logger.log(__method__, {line_item: {order: {id: item.order.id, number: item.order.number}}, cache_key: rails_cache_key}) if SpreeTaxjar::Logger.logger_enabled?
+        logger.debug line_item: {order: {id: item.order.id, number: item.order.number}}, cache_key: rails_cache_key
 
         ## Test when caching enabled that only 1 API call is sent for an order
         ## should avoid N calls for N line_items
         Rails.cache.fetch(rails_cache_key, expires_in: CACHE_EXPIRATION_DURATION) do
-          taxjar_response = Spree::Taxjar.new(order).calculate_tax_for_order
+          taxjar_response = Spree::Taxjar.new(preferred_api_key, order).calculate_tax_for_order
           return 0 unless taxjar_response
           tax_for_current_item = cache_response(taxjar_response, order, tax_address, item)
           tax_for_current_item
@@ -75,8 +73,8 @@ module Spree
       end
 
       def cache_response(taxjar_response, order, address, item = nil)
-        SpreeTaxjar::Logger.log(__method__, {order: {id: order.id, number: order.number}, taxjar_api_advanced_res: taxjar_response}) if SpreeTaxjar::Logger.logger_enabled?
-        SpreeTaxjar::Logger.log(__method__, {order: {id: order.id, number: order.number}, taxjar_api_advanced_res: taxjar_response.breakdown.line_items}) if SpreeTaxjar::Logger.logger_enabled?
+        logger.debug order: {id: order.id, number: order.number}, taxjar_api_advanced_res: taxjar_response
+        logger.debug order: {id: order.id, number: order.number}, taxjar_api_advanced_res: taxjar_response.breakdown.line_items
         ## res is set to faciliate testing as to return computed result from API
         ## for given line_item
         ## better to use Rails.cache.fetch for order and wrapping lookup based on line_item id

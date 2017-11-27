@@ -13,7 +13,7 @@ describe Spree::Calculator::TaxjarCalculator do
   let!(:tax_category_exempt) { create(:tax_category, tax_rates: []) }
   let!(:rate) { create(:tax_rate, tax_categories: [tax_category], amount: 0.05, included_in_price: included_in_price) }
   let(:included_in_price) { false }
-  let!(:calculator) { Spree::Calculator::TaxjarCalculator.new(calculable: rate) }
+  let!(:calculator) { Spree::Calculator::TaxjarCalculator.new(calculable: rate, preferred_api_key: '04d828b7374896d7867b03289ea20957') }
   let!(:order) { create(:order,ship_address_id: ship_address.id) }
   let!(:line_item) { create(:line_item, price: 10, quantity: 3, order_id: order.id) }
   let!(:line_item_exempt) { create(:line_item, price: 10, quantity: 3, order_id: order.id) }
@@ -25,7 +25,6 @@ describe Spree::Calculator::TaxjarCalculator do
   let(:taxjar_response) { double(Taxjar::Tax) }
 
   before do
-    Spree::Config[:taxjar_api_key] = '04d828b7374896d7867b03289ea20957'
     ## Forcing tests with shipping_address as tax_address
     Spree::Config[:tax_using_ship_address] = true
   end
@@ -43,78 +42,49 @@ describe Spree::Calculator::TaxjarCalculator do
   end
 
   describe '#compute_line_item' do
-    context 'when taxjar calculation disabled' do
-      before :each do
-        Spree::Config[:taxjar_enabled] = false
+    before :each do
+      tax_category_exempt.update_column(:tax_code, taxjar_exempt_tax_code)
+      line_item_exempt.update_column(:tax_category_id, tax_category_exempt.id)
+    end
+
+    context 'when rate not included in price' do
+      it 'returns tax for the line_item upto two decimal places' do
+        VCR.use_cassette "fully_taxable_line_item" do
+          expect(calculator.compute_line_item(line_item)).to eq(2.33)
+        end
       end
 
-      it 'tax should be zero' do
-        expect(calculator.compute_line_item(line_item)).to eq(0)
+      it 'should return ZERO tax for line_item having tax exempt code' do
+        VCR.use_cassette "fully_exempt_line_item" do
+          expect(calculator.compute_line_item(line_item_exempt)).to eq(0.0)
+        end
       end
     end
 
-    context 'when taxjar calculation enabled' do
-      before :each do
-        Spree::Config[:taxjar_enabled] = true
-        tax_category_exempt.update_column(:tax_code, taxjar_exempt_tax_code)
-        line_item_exempt.update_column(:tax_category_id, tax_category_exempt.id)
+    context 'when rate included in price' do
+      before do
+        rate.included_in_price = true
+        rate.save!
       end
-
-      context 'when rate not included in price' do
-        it 'returns tax for the line_item upto two decimal places' do
-          VCR.use_cassette "fully_taxable_line_item" do
-            expect(calculator.compute_line_item(line_item)).to eq(2.33)
-          end
-        end
-
-        it 'should return ZERO tax for line_item having tax exempt code' do
-          VCR.use_cassette "fully_exempt_line_item" do
-            expect(calculator.compute_line_item(line_item_exempt)).to eq(0.0)
-          end
-        end
-      end
-
-      context 'when rate included in price' do
-        before do
-          rate.included_in_price = true
-          rate.save!
-        end
-        it 'returns tax for the line_item upto two decimal places' do
-          expect(calculator.compute_line_item(line_item)).to eq(0)
-        end
+      it 'returns tax for the line_item upto two decimal places' do
+        expect(calculator.compute_line_item(line_item)).to eq(0)
       end
     end
   end
 
   describe '#compute_shipment' do
-    context 'when taxjar calculation disabled' do
-      before :each do
-        Spree::Config[:taxjar_enabled] = false
-      end
-
-      it 'tax should be zero' do
-        expect(calculator.compute_shipment(shipment)).to eq(0)
+    context 'Nexus charges tax on shipping' do
+      it 'should return tax on shipping' do
+        VCR.use_cassette "compute_shipment_with_texas_address" do
+          expect(calculator.compute_shipment(shipment)).to eq(0.78)
+        end
       end
     end
 
-    context 'when taxjar calculation enabled' do
-      before :each do
-        Spree::Config[:taxjar_enabled] = true
-      end
-
-      context 'Nexus charges tax on shipping' do
-        it 'should return tax on shipping' do
-          VCR.use_cassette "compute_shipment_with_texas_address" do
-            expect(calculator.compute_shipment(shipment)).to eq(0.78)
-          end
-        end
-      end
-
-      context 'Nexus charges NO tax on shipping' do
-        it 'should return tax on shipping as ZERO' do
-          VCR.use_cassette "compute_shipment_with_california_address" do
-            expect(calculator.compute_shipment(shipment_ca)).to eq(0)
-          end
+    context 'Nexus charges NO tax on shipping' do
+      it 'should return tax on shipping as ZERO' do
+        VCR.use_cassette "compute_shipment_with_california_address" do
+          expect(calculator.compute_shipment(shipment_ca)).to eq(0)
         end
       end
     end
@@ -128,24 +98,12 @@ describe Spree::Calculator::TaxjarCalculator do
 
   describe '#compute_shipping_rate' do
     context 'when rate included in price' do
-      context 'when taxjar calculation disabled' do
-        before :each do
-          Spree::Config[:taxjar_enabled] = false
-        end
-
-        it 'tax should be zero' do
-          expect(calculator.compute_shipment(shipment)).to eq(0)
-        end
+      before do
+        rate.included_in_price = true
+        rate.save!
       end
-      context 'when taxjar calculation enabled' do
-        before do
-          rate.included_in_price = true
-          rate.save!
-          Spree::Config[:taxjar_enabled] = true
-        end
-        it 'will raise RuntimeError' do
-          expect{ calculator.compute_shipping_rate(line_item)}.to raise_error(RuntimeError)
-        end
+      it 'will raise RuntimeError' do
+        expect{ calculator.compute_shipping_rate(line_item)}.to raise_error(RuntimeError)
       end
     end
     context 'when rate not included in price' do

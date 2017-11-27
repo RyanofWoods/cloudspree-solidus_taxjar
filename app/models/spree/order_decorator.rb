@@ -8,16 +8,16 @@ Spree::Order.class_eval do
   private
 
     def delete_taxjar_transaction
-      return unless Spree::Config[:taxjar_enabled]
-      return unless taxjar_applicable?(self)
-      client = Spree::Taxjar.new(self)
+      rate = taxjar_rate self
+      return unless rate
+      client = Spree::Taxjar.new(rate.calculator.preferred_api_key, self)
       client.delete_transaction_for_order
     end
 
     def capture_taxjar
-      return unless Spree::Config[:taxjar_enabled]
-      return unless taxjar_applicable?(self)
-      client = Spree::Taxjar.new(self)
+      rate = taxjar_rate self
+      return unless rate
+      client = Spree::Taxjar.new(rate.calculator.preferred_api_key, self)
       client.create_transaction_for_order
     end
 end
