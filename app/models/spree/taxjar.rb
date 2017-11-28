@@ -211,7 +211,7 @@ module Spree
           {
             quantity: item.quantity,
             product_identifier: item.sku,
-            description: ActionView::Base.full_sanitizer.sanitize(item.description).try(:truncate, 150),
+            description: "#{item.product.name}: #{item.variant.options_text}",
             unit_price: unit_price,
             sales_tax: item.additional_tax_total,
             discount: discount_weightage(item, unit_price),
