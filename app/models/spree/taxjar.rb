@@ -28,6 +28,9 @@ module Spree
         Rails.logger.debug order: {id: @order.id, number: @order.number}, api_response: api_response
         api_response
       end
+    rescue HTTP::Error
+      Rails.logger.error "Taxjar Failure: Failed to create transaction for order #{@order.number}"
+      # Silently ignore
     end
 
     def delete_transaction_for_order
@@ -52,6 +55,9 @@ module Spree
       else
         0
       end
+    rescue HTTP::Error
+      Rails.logger.error "Taxjar Failure: Failed to calculate tax for shipment #{@shipment.id} (#{@shipment.order.number})"
+      0
     end
 
     def has_nexus?
@@ -65,6 +71,9 @@ module Spree
       else
         false
       end
+    rescue HTTP::Error
+      Rails.logger.error "Taxjar Failure: Failed to determine nexus for #{@order.number}"
+      false
     end
 
     def calculate_tax_for_order
@@ -76,6 +85,9 @@ module Spree
         Rails.logger.debug order: {id: @order.id, number: @order.number}, api_response: api_response
         api_response
       end
+    rescue HTTP::Error
+      Rails.logger.error "Taxjar Failure: Failed to calcuate tax for #{@order.number}"
+      nil
     end
 
     private

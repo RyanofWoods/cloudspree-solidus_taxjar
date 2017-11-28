@@ -29,6 +29,17 @@ describe Spree::Taxjar do
       end
     end
 
+    context 'api is down' do
+      before :each do
+        allow(::Taxjar::Client).to receive(:new).with(api_key: taxjar_api_key).and_return(client)
+        allow( client ).to receive(:nexus_regions).and_raise HTTP::ConnectionError
+      end
+
+      it 'should return true' do
+        expect( spree_taxjar.has_nexus? ).to eq false
+      end
+    end
+
     context 'nexus_regions is present' do
       context 'tax_address is present in nexus regions' do
         it 'should return true' do
@@ -80,6 +91,17 @@ describe Spree::Taxjar do
         before do
           allow(spree_taxjar).to receive(:has_nexus?).and_return(false)
         end
+        it 'should return nil' do
+          expect(spree_taxjar.create_transaction_for_order).to eq nil
+        end
+      end
+
+      context 'api is down' do
+        before :each do
+          allow(::Taxjar::Client).to receive(:new).with(api_key: taxjar_api_key).and_return(client)
+          allow( client ).to receive(:nexus_regions).and_raise HTTP::ConnectionError
+        end
+
         it 'should return nil' do
           expect(spree_taxjar.create_transaction_for_order).to eq nil
         end
@@ -151,6 +173,17 @@ describe Spree::Taxjar do
         end
         after { spree_taxjar.calculate_tax_for_order }
 
+      end
+
+      context 'api is down' do
+        before :each do
+          allow(::Taxjar::Client).to receive(:new).with(api_key: taxjar_api_key).and_return(client)
+          allow( client ).to receive(:nexus_regions).and_raise HTTP::ConnectionError
+        end
+
+        it 'should return nil' do
+          expect(spree_taxjar.calculate_tax_for_order).to eq nil
+        end
       end
     end
 
